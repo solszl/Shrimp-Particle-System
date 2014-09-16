@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+          xmlns:s="library://ns.adobe.com/flex/spark"
+          xmlns:clocks="com.plumbee.stardust.view.stardust.common.clocks.*"
+          xmlns:view="com.plumbee.stardust.view.*"
+          width="100%" >
+
+    <fx:Script><![CDATA[
+		import com.plumbee.stardust.controller.events.ChangeEmitterInFocusEvent;
+		import com.plumbee.stardust.view.components.InputPopup;
+		import com.plumbee.stardust.view.events.EmitterChangeUIViewEvent;
+		import com.plumbee.stardust.view.events.EmitterNameChangeEvent;
+		import com.shrimp.extensions.particle.player.emitter.EmitterValueObject;
+		
+		import mx.collections.ArrayCollection;
+		import mx.events.CloseEvent;
+		import mx.logging.ILogger;
+		import mx.logging.Log;
+		import mx.managers.PopUpManager;
+		
+		import spark.events.IndexChangeEvent;
+
+        private static const LOG : ILogger = Log.getLogger(getQualifiedClassName(EmittersUIView).replace("::", "."));
+
+        private const _emitterAC : ArrayCollection = new ArrayCollection();
+
+        private var emitterNameWindow : InputPopup;
+
+        private function onClickAdd(event : MouseEvent) : void
+        {
+            LOG.debug("Add Emitter");
+
+            dispatchEvent(new EmitterChangeUIViewEvent(EmitterChangeUIViewEvent.ADD));
+        }
+
+        private function onClickRemove(event : MouseEvent) : void
+        {
+            LOG.debug("Remove Emitter");
+
+            dispatchEvent(new EmitterChangeUIViewEvent(EmitterChangeUIViewEvent.REMOVE));
+        }
+
+        private function onClickRename(event : MouseEvent) : void
+        {
+            LOG.debug("Rename Emitter");
+
+            emitterNameWindow = PopUpManager.createPopUp(this, InputPopup, true) as InputPopup;
+            emitterNameWindow.closeButton.visible = false;
+            emitterNameWindow.moveArea.visible = false;
+
+            emitterNameWindow.addEventListener(CloseEvent.CLOSE, removeRenamePopup);
+            emitterNameWindow.okButton.addEventListener(MouseEvent.CLICK, handleRenamePopupEvent);
+            emitterNameWindow.cancelButton.addEventListener(MouseEvent.CLICK, removeRenamePopup);
+
+            emitterNameWindow.label = EmitterValueObject(dropdownList.selectedItem).emitter.name;
+
+            PopUpManager.centerPopUp(emitterNameWindow);
+        }
+
+        private function removeRenamePopup(event : Event) : void
+        {
+            PopUpManager.removePopUp(emitterNameWindow);
+        }
+
+        private function handleRenamePopupEvent(event : Event) : void
+        {
+            var result : String = emitterNameWindow.emitterName.text;
+            PopUpManager.removePopUp(emitterNameWindow);
+            var emitter : EmitterValueObject = dropdownList.selectedItem as EmitterValueObject;
+
+            dispatchEvent(new EmitterNameChangeEvent(EmitterNameChangeEvent.CHANGE, result, emitter));
+        }
+
+        private function onDropDownChange(event : IndexChangeEvent) : void
+        {
+            var emitter : EmitterValueObject = dropdownList.selectedItem as EmitterValueObject;
+            dispatchEvent(new ChangeEmitterInFocusEvent(ChangeEmitterInFocusEvent.CHANGE, emitter));
+            LOG.debug("Change Emitter: " + emitter);
+        }
+
+        public function setDropDownListResult(list : Array, emitterInFocus : EmitterValueObject) : void
+        {
+            _emitterAC.source = list;
+            dropdownList.selectedItem = emitterInFocus;
+        }
+
+        private static function emitterNameDDL(item : Object) : String
+        {
+            return EmitterValueObject(item).emitter.name;
+        }
+        ]]></fx:Script>
+
+    <s:HGroup verticalAlign="middle" width="100%">
+        <s:Label id="containerLabel" text="Emitters" fontSize="14" fontWeight="bold"/>
+        <s:DropDownList id="dropdownList" labelFunction="emitterNameDDL"
+                        dataProvider="{_emitterAC}" requireSelection="true"
+                        width="220"
+                        change="onDropDownChange(event)"/>
+        <s:Button label="Add" click="onClickAdd(event)"/>
+        <s:Button label="Remove" click="onClickRemove(event)"/>
+        <s:Button label="Rename" click="onClickRename(event)"/>
+    </s:HGroup>
+
+    <s:BorderContainer width="100%" height="100%" backgroundColor="#2F3B3F">
+        <s:layout>
+            <s:VerticalLayout/>
+        </s:layout>
+
+        <clocks:ClockContainer />
+        <view:ParticleHandlerContainer />
+    </s:BorderContainer>
+
+
+</s:VGroup>
